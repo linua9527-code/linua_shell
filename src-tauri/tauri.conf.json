@@ -30,7 +30,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/GOODBOY008/r-shell/releases/latest/download/latest.json"
+        "https://github.com/linua9527-code/linua_shell/releases/latest/download/latest.json"
       ],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEyREE0MDUyMUUzNzIzOTUKUldTVkl6Y2VVa0RhRXBTZUNuMzgrQ3ljR0hVUDRDWHd5R0dPcVQwVzlnY0pIb3pFcXV5OFJ2MlIK"

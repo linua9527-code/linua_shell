@@ -1,5 +1,9 @@
 import { vi } from 'vitest';
 
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: vi.fn(async () => vi.fn()),
+}));
+
 vi.mock('@/lib/encrypted-storage', () => ({
   encryptedStorage: {
     getItem: (key: string) => localStorage.getItem(key),

@@ -2,10 +2,10 @@
 
 # R-Shell — Lightweight SSH Client for macOS, Windows & Linux
 
-[![GitHub license](https://img.shields.io/github/license/GOODBOY008/r-shell)](https://github.com/GOODBOY008/r-shell/blob/main/LICENSE)
-[![Test](https://github.com/GOODBOY008/r-shell/actions/workflows/test.yml/badge.svg)](https://github.com/GOODBOY008/r-shell/actions/workflows/test.yml)
-[![Release](https://github.com/GOODBOY008/r-shell/actions/workflows/release.yml/badge.svg)](https://github.com/GOODBOY008/r-shell/actions/workflows/release.yml)
-[![GitHub stars](https://img.shields.io/github/stars/GOODBOY008/r-shell)](https://github.com/GOODBOY008/r-shell/stargazers)
+[![GitHub license](https://img.shields.io/github/license/linua9527-code/linua_shell)](https://github.com/linua9527-code/linua_shell/blob/main/LICENSE)
+[![Test](https://github.com/linua9527-code/linua_shell/actions/workflows/test.yml/badge.svg)](https://github.com/linua9527-code/linua_shell/actions/workflows/test.yml)
+[![Release](https://github.com/linua9527-code/linua_shell/actions/workflows/release.yml/badge.svg)](https://github.com/linua9527-code/linua_shell/actions/workflows/release.yml)
+[![GitHub stars](https://img.shields.io/github/stars/linua9527-code/linua_shell)](https://github.com/linua9527-code/linua_shell/stargazers)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-blue?logo=tauri)](https://tauri.app/)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev/)
 [![Rust](https://img.shields.io/badge/Rust-Latest-orange?logo=rust)](https://www.rust-lang.org/)
@@ -204,7 +204,7 @@ brew upgrade --cask r-shell
 
 ### 📥 Download Releases
 
-Download from the [Releases](https://github.com/GOODBOY008/r-shell/releases) page:
+Download from the [Releases](https://github.com/linua9527-code/linua_shell/releases) page:
 
 | Platform | File |
 |----------|------|
@@ -212,6 +212,19 @@ Download from the [Releases](https://github.com/GOODBOY008/r-shell/releases) pag
 | macOS (Intel) | `r-shell_x.x.x_x64.dmg` |
 | Windows | `r-shell_x.x.x_x64-setup.exe` |
 | Linux | `r-shell_x.x.x_amd64.AppImage` / `.deb` |
+
+### GitHub Actions builds
+
+The [Test workflow](https://github.com/linua9527-code/linua_shell/actions/workflows/test.yml) checks the frontend and Rust code on pushes to `main` and pull requests. The [Release workflow](https://github.com/linua9527-code/linua_shell/actions/workflows/release.yml) builds macOS (Apple Silicon and Intel), Windows, and Linux installers when a `v`-prefixed version tag is pushed. You can also start it from the Actions tab with **Run workflow**. Builds appear in a draft GitHub Release; review all four jobs and publish the draft to make the files public.
+
+The tag must match the version in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`. For example, after pushing version `2.8.0`:
+
+```bash
+git tag v2.8.0
+git push origin v2.8.0
+```
+
+`GITHUB_TOKEN` is supplied automatically. To publish signed updater packages and `latest.json`, add repository Actions secrets `TAURI_SIGNING_PRIVATE_KEY` and, if the key is password-protected, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. The private key must match the `plugins.updater.pubkey` value in `src-tauri/tauri.conf.json`. Without the private key, the workflow still builds normal installers, but in-app update checks have no new signed update to install. macOS and Windows builds are currently unsigned by their operating systems; public distribution may require Apple notarization and Windows code-signing certificates separately.
 
 ---
 

@@ -723,9 +723,10 @@ impl SshClient {
             .open_sftp_session()
             .await
             .map_err(|e| anyhow::anyhow!("Failed to open SFTP channel: {e}"))?;
-        let mut remote_file = sftp.create(remote_path).await.map_err(|e| {
-            anyhow::anyhow!("Failed to create remote file '{}': {e}", remote_path)
-        })?;
+        let mut remote_file = sftp
+            .create(remote_path)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to create remote file '{}': {e}", remote_path))?;
         let mut buffer = vec![0u8; SFTP_UPLOAD_BUFFER_SIZE];
         let mut total_bytes = 0u64;
         let mut source_chunks = 0u64;

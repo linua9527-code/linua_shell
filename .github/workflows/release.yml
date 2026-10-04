@@ -1,0 +1,141 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-version:
+    name: Validate release version
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check version and tag
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const version = JSON.parse(fs.readFileSync('package.json')).version;
+          const tauriVersion = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json')).version;
+          const cargo = fs.readFileSync('src-tauri/Cargo.toml', 'utf8');
+          const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
+          const tag = process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : `v${version}`;
+          if (version !== tauriVersion || version !== cargoVersion || tag !== `v${version}`) {
+            console.error(`Version mismatch: tag=${tag}, package=${version}, Tauri=${tauriVersion}, Cargo=${cargoVersion}`);
+            process.exit(1);
+          }
+          console.log(`Release version: ${version}`);
+          NODE
+
+  publish-tauri:
+    name: Build ${{ matrix.name }}
+    needs: validate-version
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            platform: macos-latest
+            args: --target aarch64-apple-darwin
+          - name: macOS Intel
+            platform: macos-latest
+            args: --target x86_64-apple-darwin
+          - name: Linux
+            platform: ubuntu-22.04
+            args: ''
+          - name: Windows
+            platform: windows-latest
+            args: ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ startsWith(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            libfuse2 \
+            libgtk-3-dev \
+            libssl-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            patchelf \
+            perl \
+            wget
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Select signing mode
+        id: signing
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          BUILD_ARGS: ${{ matrix.args }}
+        run: |
+          if [ -z "$SIGNING_KEY" ]; then
+            echo "args=$BUILD_ARGS --config src-tauri/tauri.unsigned.conf.json" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and publish bundles
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: R-Shell v__VERSION__
+          releaseBody: |
+            Download the installer for your platform below.
+
+            See the [installation instructions](https://github.com/${{ github.repository }}#-download-releases) for details.
+          releaseDraft: true
+          prerelease: false
+          generateReleaseNotes: true
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
+          tauriScript: pnpm tauri
+          args: ${{ steps.signing.outputs.args }}
